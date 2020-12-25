@@ -20,10 +20,11 @@ namespace MyAngularAPP.Controllers
         }
 
         [HttpGet]
-        [Route("GetFiles")]
-        public ActionResult GetFile(string root)
+        [Route("GetFolders")]
+        public ActionResult GetFolders(string root)
         {
-            string[] subdirectoryEntries = null;
+            // string[] subdirectoryEntries = null;
+            List<Files> files = new List<Files>();
             try
             {
                 string path = configuration.GetValue<string>("Settings:path");
@@ -31,50 +32,95 @@ namespace MyAngularAPP.Controllers
                 {
                     root = path;
                 }
-                // Get all subdirectories
-                subdirectoryEntries = Directory.GetDirectories(root);
-                //GetSubDirectories();
+               files = GetAllFolders(root);
             }
             catch (Exception ex)
             {
-                throw ex;
+              //  throw ex;
             }
-            return Ok(subdirectoryEntries);
-        }
-        public void GetSubDirectories()
-
-        {
-
-            string root = @"D:\\PrimePay\";
-
-            // Get all subdirectories
-
-            string[] subdirectoryEntries = Directory.GetDirectories(root);
-
-            // Loop through them to see if they have any other subdirectories
-
-            foreach (string subdirectory in subdirectoryEntries)
-
-                LoadSubDirs(subdirectory);
-
+            return Ok(files);
         }
 
-        private void LoadSubDirs(string dir)
-
+        public List<Files> GetAllFolders(string rootFolder)
         {
-
-            Console.WriteLine(dir);
-
-            string[] subdirectoryEntries = Directory.GetDirectories(dir);
-
-            foreach (string subdirectory in subdirectoryEntries)
-
+            string[] subdirectoryEntries = null;
+            List<Files> files = new List<Files>();
+            string path = configuration.GetValue<string>("Settings:path");
+            if (string.IsNullOrEmpty(rootFolder))
             {
-
-                LoadSubDirs(subdirectory);
-
+                rootFolder = path;
             }
-
+            // Get all subdirectories
+            subdirectoryEntries = Directory.GetDirectories(rootFolder);
+            Parallel.ForEach(subdirectoryEntries, i =>
+            {
+                files.Add(new Files() { Name = i, type = "Folder" });
+            });
+           
+            return files; 
         }
+
+        [HttpGet]
+        [Route("GetFolderFiles")]
+        public ActionResult GetFolderFiles(string root)
+        {
+            string[] subdirectoryEntries = null;
+            List<Files> files = new List<Files>();
+            string path = configuration.GetValue<string>("Settings:path");
+            if (string.IsNullOrEmpty(root))
+            {
+                root = path;
+            }
+            // Get all subdirectories
+            files = GetAllFolders(root);
+            // Get all Files
+            subdirectoryEntries = Directory.GetFiles(root);
+            Parallel.ForEach(subdirectoryEntries, i =>
+            {
+                files.Add(new Files() { Name = i, type = "Files" });
+            });
+            
+            return Ok(files); 
+        }
+
+        public List<Files> GetFolderFilesold(string rootFolder)
+        {
+            string[] subdirectoryEntries = null;
+            List<Files> files = new List<Files>();
+            Files _file = null;
+            string path = configuration.GetValue<string>("Settings:path");
+            if (string.IsNullOrEmpty(rootFolder))
+            {
+                rootFolder = path;
+            }
+            // Get all subdirectories
+            subdirectoryEntries = Directory.GetDirectories(rootFolder);
+            //Parallel.ForEach(subdirectoryEntries, i =>
+            //{
+               // files.Add(new Files() { Name = i, type = "Folder" });
+                var filePaths = Directory.EnumerateFiles(rootFolder,
+            "*.*", new EnumerationOptions
+            {
+                IgnoreInaccessible = true,
+                RecurseSubdirectories = true
+            });
+                //string[] directoryfiles = Directory.EnumerateFiles(v);
+                //foreach (var dirfiles in filePaths)
+                //{
+                Parallel.ForEach(filePaths, i =>
+                {
+                    files.Add(new Files() { Name = i, type = "File" });
+                });
+               // });
+            //  files.Add(_file);
+            return files;
+        }
+        //public List<string> GetFoldersFiles(string rootFolder)
+        //{
+        //    string[] subdirectoryEntries = null;
+
+        //}
+
+       
     }
 }
